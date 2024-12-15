@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海大資工自習教室預約平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #333333;
+            color: white;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .tabs button {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 16px;
+        }
+
+        .tabs button.active {
+            background-color: white;
+            border-bottom: 2px solid #333;
+        }
+
+        .content {
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .history-list {
+            margin-top: 20px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .history-item button {
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .history-item button:hover {
+            background-color: #c82333;
+        }
+
+        #calendar{
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            height: auto;
+            min-height: 400px;
+        }
+        textarea{
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="nav">
+        <h1>海大資工系自習教室借用平台</h1>
+        <div>
+            <a href="#" onclick="logout()">登出</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 分頁選單 -->
+        <div class="tabs">
+            <button id="tab-profile" class="active" onclick="showTab('profile')">個人資訊</button>
+            <button id="tab-plan" onclick="showTab('plan')">借用教室</button>
+            <button id="tab-history" onclick="showTab('history')">紀錄查詢</button>
+        </div>
+
+        <!-- 個人資訊 -->
+        <div id="profile" class="content active">
+            <div class="card">
+                <h2>個人資訊</h2>
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="height">學號:</label>
+                        <input type="number" id="sutdent_id" name="sutdent_id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">姓名:</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cellphone">連絡電話:</label>
+                        <input type="tel" id="cellphone" name="cellphone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="goal">系級:</label>
+                        <select id="goal" name="goal" required>
+                            <option value="資工1A">資工1A</option>
+                            <option value="資工1B">資工1B</option>
+                            <option value="資工2A">資工2A</option>
+                            <option value="資工2B">資工2B</option>
+                            <option value="資工3A">資工3A</option>
+                            <option value="資工3B">資工3B</option>
+                            <option value="資工4A">資工4A</option>
+                            <option value="資工4B">資工4B</option>
+                            <option value="資工碩士班">資工碩士班</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn" onclick="saveProfile()">儲存資訊</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 預約專區 -->
+        <div id="plan" class="content">
+            <div class="card">
+                <h2>借用教室</h2>
+                <div class="form-group">
+                    <label for="name">借用人:</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="">連絡電話:</label>
+                    <input type="tel" id="cellphone" required>
+                </div>
+                <div class="form-group">
+                    <label for="">借用教室:</label>
+                    <select id="classroom" name="classroom" required>
+                        <option value="INS205">205教室</option>
+                        <option value="INS212">212教室</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="">借用日期:</label>
+                    <input type="date" id="borrow_date" >
+                </div>
+                <div class="form-group">
+                    <label for="">借用時間:</label>
+                    <select id="borrow_time" name="borrow_time" required>
+                        <option value="1">08:00 - 08:50</option>
+                        <option value="2">09:00 - 09:50</option>
+                        <option value="3">10:00 - 10:50</option>
+                        <option value="4">11:00 - 11:50</option> 
+                        <option value="5">12:00 - 12:50</option> 
+                        <option value="6">13:00 - 13:50</option> 
+                        <option value="7">14:00 - 14:50</option> 
+                        <option value="8">15:00 - 15:50</option> 
+                        <option value="9">16:00 - 16:50</option> 
+                        <option value="10">17:00 - 17:50</option> 
+                        <option value="11">18:00 - 18:50</option> 
+                        <option value="12">19:00 - 19:50</option> 
+                        <option value="13">20:00 - 20:50</option> 
+                        <option value="14">21:00 - 21:50</option> 
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reason">借用事由:</label>
+                    <textarea type="text" name="occupyReason" placeholder="Input the reason"></textarea>
+                </div>
+                <button type="button" class="btn" onclick="">送出</button>
+            </div>
+        </div>
+
+        <!-- 預約紀錄查詢 -->
+        <div id="history" class="content">
+            <div class="card">
+                <h2>預約紀錄查詢</h2>
+                <div class="form-group">
+                    <label for="history-date">日期:</label>
+                    <input type="date" id="history-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="history-weight">體重(kg):</label>
+                    <input type="number" id="history-weight" required>
+                </div>
+                <div class="form-group">
+                    <label for="history-notes">備註:</label>
+                    <input type="text" id="history-notes">
+                </div>
+                <button type="button" class="btn" onclick="addHistory()">新增紀錄</button>
+            </div>
+
+            <!-- 預約清單 -->
+            <div class="history-list" id="history-list">
+                <!-- 這裡將動態顯示未來的預約紀錄 -->
+            </div>
+
+            <div class="card">
+                <h2>行事曆</h2>
+                <div id="calendar" style="display: flex;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tabs button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            if (tabId === "history") {
+                const calendar = FullCalendar.getCalendar(document.getElementById("calendar"));
+                if (calendar) {
+                    calendar.updateSize(); // 強制重新調整行事曆大小
+                }
+            }
+        }
+
+        function logout() {
+            alert("已登出！");
+            window.location.href = "auth.html";
+        }
+
+        function saveProfile() {
+            const name = document.getElementById("name").value;
+            const height = document.getElementById("height").value;
+            const weight = document.getElementById("weight").value;
+            const goal = document.getElementById("goal").value;
+
+            alert(`資訊已更新！\n姓名: ${name}\n身高: ${height}cm\n體重: ${weight}kg\n目標: ${goal}`);
+            // 可加入 fetch() 與後端互動更新資料庫
+        }
+
+        function addHistory() {
+            const date = document.getElementById("history-date").value;
+            const weight = document.getElementById("history-weight").value;
+            const notes = document.getElementById("history-notes").value;
+
+            if (!date || !weight) {
+                alert("請填寫日期和體重！");
+                return;
+            }
+
+            const historyItem = document.createElement("div");
+            historyItem.classList.add("history-item");
+            historyItem.innerHTML = `
+                <span>${date} - ${weight}kg ${notes ? `- ${notes}` : ''}</span>
+                <button onclick="deleteHistory(this)">刪除</button>
+                <button onclick="editHistory(this)">編輯</button>
+            `;
+
+            document.getElementById("history-list").appendChild(historyItem);
+
+            // 清空表單
+            document.getElementById("history-date").value = '';
+            document.getElementById("history-weight").value = '';
+            document.getElementById("history-notes").value = '';
+
+            // 此處可以加入保存紀錄至資料庫的功能
+        }
+
+        function deleteHistory(button) {
+            button.parentElement.remove();
+        }
+
+        function editHistory(button) {
+            const historyItem = button.parentElement;
+            const date = historyItem.querySelector('span').textContent.split(' - ')[0];
+            const weight = historyItem.querySelector('span').textContent.split(' - ')[1].split('kg')[0];
+            const notes = historyItem.querySelector('span').textContent.split(' - ')[1].split('kg')[1] || '';
+
+            document.getElementById("history-date").value = date;
+            document.getElementById("history-weight").value = weight;
+            document.getElementById("history-notes").value = notes;
+
+            // 刪除舊的紀錄
+            historyItem.remove();
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+        const calendarEl = document.getElementById("calendar");
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            headerToolbar: {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+            },
+            buttonText: {
+                today: "今天",
+                month: "月",
+                week: "週",
+                day: "日",
+            },
+            locale: "zh-tw", // 設置語言
+            events: [ // Events 
+            {
+              title: "All Day Event",
+              start: "2024-12-22",
+            },
+            {
+              title: "Time Event",
+              start: "2024-12-17 12:00:00",
+            },
+            {
+              title: "Holiday",
+              start: "2024-03-03 12:00:00",
+              end: "2024-03-06 16:00:00",
+              textColor: "#000",
+              className: "holidayEvent"
+            },
+            {
+              title: "Home Page",
+              start: "2024-03-08",
+              url: "網址路徑"
+            },
+          ]
+        });
+        calendar.render();
+        FullCalendar.getCalendar = () => calendar;
+    });
+</script>
+    </script>
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+</body>
+</html>
