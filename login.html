@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 - 自習教室借用平台</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 10px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .redirect-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .redirect-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .redirect-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>登入</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="student_id">學號:</label>
+                <input type="text" id="student_id" name="student_id" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="button" class="btn" onclick="login()">登入</button>
+        </form>
+        <div class="redirect-link">
+            還沒註冊？<a href="register.html">先註冊吧！</a>
+        </div>
+    </div>
+
+    <script>
+        function login() {
+            const formData = {
+                student_id: document.getElementById("student_id").value,
+                password: document.getElementById("password").value,
+            };
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('登入成功！');
+                        // 登入成功後跳轉至主頁
+                        window.location.href = 'main.html';
+                    } else {
+                        alert(`登入失敗：${data.message}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+        }
+    </script>
+</body>
+</html>
