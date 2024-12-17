@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>註冊 - 自習教室借用平台</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 10px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .redirect-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .redirect-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .redirect-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>註冊</h2>
+        <form id="register-form">
+            <div class="form-group">
+                <label for="student_id">學號:</label>
+                <input type="text" id="student_id" name="student_id" required>
+            </div>
+            <div class="form-group">
+                <label for="name">姓名:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="cellphone">連絡電話:</label>
+                <input type="text" id="cellphone" name="cellphone">
+            </div>
+            <div class="form-group">
+                <label for="department">系級:</label>
+                <select id="department" name="department" required>
+                    <option value="資工1A">資工1A</option>
+                    <option value="資工1B">資工1B</option>
+                    <option value="資工2A">資工2A</option>
+                    <option value="資工2B">資工2B</option>
+                    <option value="資工3A">資工3A</option>
+                    <option value="資工3B">資工3B</option>
+                    <option value="資工4A">資工4A</option>
+                    <option value="資工4B">資工4B</option>
+                    <option value="資工系碩士班">資工系碩士班</option>
+                    <!-- 可擴展更多系級 -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="button" class="btn" onclick="register()">註冊</button>
+        </form>
+        <div class="redirect-link">
+            註冊過了？<a href="login.html">給我回來登入！</a>
+        </div>
+    </div>
+
+    <script>
+        function register() {
+            const formData = {
+                student_id: document.getElementById("student_id").value,
+                name: document.getElementById("name").value,
+                cellphone: document.getElementById("cellphone").value,
+                department: document.getElementById("department").value,
+                password: document.getElementById("password").value,
+            };
+
+            fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('註冊成功！請前往登入');
+                        window.location.href = 'login.html';
+                    } else {
+                        alert(`註冊失敗：${data.message}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+        }
+    </script>
+</body>
+</html>
