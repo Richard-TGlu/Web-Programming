@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-tw">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -175,7 +175,7 @@
         <!-- 分頁選單 -->
         <div class="tabs">
             <button id="tab-profile" class="active" onclick="showTab('profile')">個人資訊</button>
-            <button id="tab-plan" onclick="showTab('plan')">借用教室</button>
+            <button id="tab-reservation" onclick="showTab('reservation')">借用教室</button>
             <button id="tab-history" onclick="showTab('history')">紀錄查詢</button>
         </div>
 
@@ -184,21 +184,18 @@
             <div class="card">
                 <h2>個人資訊</h2>
                 <form id="profile-form">
-                    <div class="form-group">
-                        <label for="height">學號:</label>
-                        <input type="number" id="sutdent_id" name="sutdent_id" required>
-                    </div>
+                    <input type="hidden" id="userId">
                     <div class="form-group">
                         <label for="name">姓名:</label>
-                        <input type="text" id="name" name="name" required>
+                        <input type="text" id="name" name="name">
                     </div>
                     <div class="form-group">
                         <label for="cellphone">連絡電話:</label>
-                        <input type="tel" id="cellphone" name="cellphone" required>
+                        <input type="tel" id="cellphone" name="cellphone">
                     </div>
                     <div class="form-group">
-                        <label for="goal">系級:</label>
-                        <select id="goal" name="goal" required>
+                        <label for="department">系級:</label>
+                        <select id="department" name="department">
                             <option value="資工1A">資工1A</option>
                             <option value="資工1B">資工1B</option>
                             <option value="資工2A">資工2A</option>
@@ -216,52 +213,52 @@
         </div>
 
         <!-- 預約專區 -->
-        <div id="plan" class="content">
+        <div id="reservation" class="content">
             <div class="card">
                 <h2>借用教室</h2>
                 <div class="form-group">
                     <label for="name">借用人:</label>
-                    <input type="text" id="name" required>
+                    <input type="text" id="name">
                 </div>
                 <div class="form-group">
-                    <label for="">連絡電話:</label>
-                    <input type="tel" id="cellphone" required>
+                    <label for="cellphone">連絡電話:</label>
+                    <input type="tel" id="cellphone">
                 </div>
                 <div class="form-group">
-                    <label for="">借用教室:</label>
-                    <select id="classroom" name="classroom" required>
+                    <label for="classroom">借用教室:</label>
+                    <select id="classroom" name="classroom">
                         <option value="INS205">205教室</option>
                         <option value="INS212">212教室</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="">借用日期:</label>
+                    <label for="borrow_date">借用日期:</label>
                     <input type="date" id="borrow_date" >
                 </div>
                 <div class="form-group">
-                    <label for="">借用時間:</label>
-                    <select id="borrow_time" name="borrow_time" required>
-                        <option value="1">08:00 - 08:50</option>
-                        <option value="2">09:00 - 09:50</option>
-                        <option value="3">10:00 - 10:50</option>
-                        <option value="4">11:00 - 11:50</option> 
-                        <option value="5">12:00 - 12:50</option> 
-                        <option value="6">13:00 - 13:50</option> 
-                        <option value="7">14:00 - 14:50</option> 
-                        <option value="8">15:00 - 15:50</option> 
-                        <option value="9">16:00 - 16:50</option> 
-                        <option value="10">17:00 - 17:50</option> 
-                        <option value="11">18:00 - 18:50</option> 
-                        <option value="12">19:00 - 19:50</option> 
-                        <option value="13">20:00 - 20:50</option> 
-                        <option value="14">21:00 - 21:50</option> 
+                    <label for="borrow_time">借用時間:</label>
+                    <select id="borrow_time" name="borrow_time">
+                        <option value="08:00 - 08:50">08:00 - 08:50</option>
+                        <option value="09:00 - 09:50">09:00 - 09:50</option>
+                        <option value="10:00 - 10:50">10:00 - 10:50</option>
+                        <option value="11:00 - 11:50">11:00 - 11:50</option> 
+                        <option value="12:00 - 12:50">12:00 - 12:50</option> 
+                        <option value="13:00 - 13:50">13:00 - 13:50</option> 
+                        <option value="14:00 - 14:50">14:00 - 14:50</option> 
+                        <option value="15:00 - 15:50">15:00 - 15:50</option> 
+                        <option value="16:00 - 16:50">16:00 - 16:50</option> 
+                        <option value="17:00 - 17:50">17:00 - 17:50</option> 
+                        <option value="18:00 - 18:50">18:00 - 18:50</option> 
+                        <option value="19:00 - 19:50">19:00 - 19:50</option> 
+                        <option value="20:00 - 20:50">20:00 - 20:50</option> 
+                        <option value="21:00 - 21:50">21:00 - 21:50</option> 
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="reason">借用事由:</label>
-                    <textarea type="text" name="occupyReason" placeholder="Input the reason"></textarea>
+                    <label for="occupyReason">借用事由:</label>
+                    <textarea type="text" name="occupyReason" id="occupyReason" placeholder="Input the reason"></textarea>
                 </div>
-                <button type="button" class="btn" onclick="">送出</button>
+                <button type="button" class="btn" onclick="submitReservation()">送出</button>
             </div>
         </div>
 
@@ -269,24 +266,9 @@
         <div id="history" class="content">
             <div class="card">
                 <h2>預約紀錄查詢</h2>
-                <div class="form-group">
-                    <label for="history-date">日期:</label>
-                    <input type="date" id="history-date" required>
+                <div class="history-list" id="history-list">
+                    <!-- 這裡將動態顯示預約紀錄 -->
                 </div>
-                <div class="form-group">
-                    <label for="history-weight">體重(kg):</label>
-                    <input type="number" id="history-weight" required>
-                </div>
-                <div class="form-group">
-                    <label for="history-notes">備註:</label>
-                    <input type="text" id="history-notes">
-                </div>
-                <button type="button" class="btn" onclick="addHistory()">新增紀錄</button>
-            </div>
-
-            <!-- 預約清單 -->
-            <div class="history-list" id="history-list">
-                <!-- 這裡將動態顯示未來的預約紀錄 -->
             </div>
 
             <div class="card">
@@ -313,107 +295,211 @@
 
         function logout() {
             alert("已登出！");
-            window.location.href = "auth.html";
+            window.location.href = "login.html";
         }
 
         function saveProfile() {
             const name = document.getElementById("name").value;
-            const height = document.getElementById("height").value;
-            const weight = document.getElementById("weight").value;
-            const goal = document.getElementById("goal").value;
+            const cellphone = document.getElementById("cellphone").value;
+            const department = document.getElementById("department").value;
+            const userId = document.getElementById("userId").value;
 
-            alert(`資訊已更新！\n姓名: ${name}\n身高: ${height}cm\n體重: ${weight}kg\n目標: ${goal}`);
-            // 可加入 fetch() 與後端互動更新資料庫
+            const formData = { userId, name, cellphone, department };
+
+            fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('資訊已更新！');
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
         }
 
-        function addHistory() {
-            const date = document.getElementById("history-date").value;
-            const weight = document.getElementById("history-weight").value;
-            const notes = document.getElementById("history-notes").value;
+        function loadProfile(userId) {
+            fetch(`/api/profile?userId=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const user = data.user;
+                        document.getElementById("userId").value = user.id;
+                        document.getElementById("name").value = user.name;
+                        document.getElementById("cellphone").value = user.cellphone;
+                        document.getElementById("department").value = user.department;
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+        }
 
-            if (!date || !weight) {
-                alert("請填寫日期和體重！");
-                return;
+        // 當頁面載入時，載入用戶資訊
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            if (userId) {
+                loadProfile(userId);
             }
+        });
 
-            const historyItem = document.createElement("div");
-            historyItem.classList.add("history-item");
-            historyItem.innerHTML = `
-                <span>${date} - ${weight}kg ${notes ? `- ${notes}` : ''}</span>
-                <button onclick="deleteHistory(this)">刪除</button>
-                <button onclick="editHistory(this)">編輯</button>
-            `;
+        function updateCalendar() {
+            fetch('/api/reservations')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const events = data.reservations.map(reservation => ({
+                            title: reservation.classroom,
+                            start: reservation.borrow_date + ' ' + reservation.borrow_time_start,
+                            end: reservation.borrow_date + ' ' + reservation.borrow_time_end
+                        }));
 
-            document.getElementById("history-list").appendChild(historyItem);
-
-            // 清空表單
-            document.getElementById("history-date").value = '';
-            document.getElementById("history-weight").value = '';
-            document.getElementById("history-notes").value = '';
-
-            // 此處可以加入保存紀錄至資料庫的功能
-        }
-
-        function deleteHistory(button) {
-            button.parentElement.remove();
-        }
-
-        function editHistory(button) {
-            const historyItem = button.parentElement;
-            const date = historyItem.querySelector('span').textContent.split(' - ')[0];
-            const weight = historyItem.querySelector('span').textContent.split(' - ')[1].split('kg')[0];
-            const notes = historyItem.querySelector('span').textContent.split(' - ')[1].split('kg')[1] || '';
-
-            document.getElementById("history-date").value = date;
-            document.getElementById("history-weight").value = weight;
-            document.getElementById("history-notes").value = notes;
-
-            // 刪除舊的紀錄
-            historyItem.remove();
+                        const calendar = FullCalendar.getCalendar(document.getElementById("calendar"));
+                        calendar.addEventSource(events);
+                    } else {
+                        alert('無法更新行事曆');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-        const calendarEl = document.getElementById("calendar");
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: "dayGridMonth",
-            headerToolbar: {
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
-            },
-            buttonText: {
-                today: "今天",
-                month: "月",
-                week: "週",
-                day: "日",
-            },
-            locale: "zh-tw", // 設置語言
-            events: [ // Events 
-            {
-              title: "All Day Event",
-              start: "2024-12-22",
-            },
-            {
-              title: "Time Event",
-              start: "2024-12-17 12:00:00",
-            },
-            {
-              title: "Holiday",
-              start: "2024-03-03 12:00:00",
-              end: "2024-03-06 16:00:00",
-              textColor: "#000",
-              className: "holidayEvent"
-            },
-            {
-              title: "Home Page",
-              start: "2024-03-08",
-              url: "網址路徑"
-            },
-          ]
+            const calendarEl = document.getElementById("calendar");
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: "dayGridMonth",
+                headerToolbar: {
+                    left: "prev,next today",
+                    center: "title",
+                    right: "dayGridMonth,timeGridWeek,timeGridDay",
+                },
+                buttonText: {
+                    today: "今天",
+                    month: "月",
+                    week: "週",
+                    day: "日",
+                },
+                locale: "zh-tw", // 設置語言
+                events: [ ] //event
+            });
+            calendar.render();
+            FullCalendar.getCalendar = () => calendar;
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            if (userId) {
+                loadProfile(userId);
+                updateCalendar(); // 初始化行事曆
+            }
         });
-        calendar.render();
-        FullCalendar.getCalendar = () => calendar;
-    });
+
+        function submitReservation() {
+            const name = document.getElementById("name").value;
+            const cellphone = document.getElementById("cellphone").value;
+            const classroom = document.getElementById("classroom").value;
+            const borrow_date = document.getElementById("borrow_date").value;
+            const borrow_time = document.getElementById("borrow_time").value;
+            const occupyReason = document.getElementById("occupyReason").value.trim();
+
+            // 驗證必填欄位
+            if (!name || !cellphone || !classroom || !borrow_date || !borrow_time || !occupyReason) {
+                alert("請填寫所有必填欄位！");
+                return;
+            }
+
+            // AJAX 請求
+            fetch('/api/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name, cellphone, classroom, borrow_date, borrow_time, occupyReason
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('預約成功！');
+                    // 更新行事曆
+                    updateCalendar();
+                } else {
+                    alert(`預約失敗：${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('伺服器錯誤，請稍後再試！');
+            });
+        }
+
+        function loadReservations(userId) {
+            fetch(`/api/reservations?userId=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const reservations = data.reservations;
+                        const historyList = document.getElementById("history-list");
+                        historyList.innerHTML = ''; // 清空舊數據
+
+                        reservations.forEach(reservation => {
+                            const historyItem = document.createElement("div");
+                            historyItem.classList.add("history-item");
+                            historyItem.innerHTML = `
+                                <span>${reservation.classroom} - ${reservation.borrow_date} ${reservation.borrow_time}</span>
+                                <button onclick="cancelReservation(${reservation.id})">取消預約</button>
+                            `;
+                            historyList.appendChild(historyItem);
+                        });
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+        }
+
+
+        function cancelReservation(reservationId) {
+            fetch('/api/cancel-reservation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservationId })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('預約已取消！');
+                        loadReservations(document.getElementById("userId").value);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            if (userId) {
+                loadReservations(userId);
+            }
+        });
 </script>
     </script>
 
