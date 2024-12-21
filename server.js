@@ -3,42 +3,49 @@ const mysql = require('mysql2/promise');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const path = require('path');
+const session = require('express-session');
 
 const app = express();
 const PORT = 3000;
 
+// 使用 express-session 中介軟體來管理 session
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+}));
+
 // 中間件
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public'))); // 提供靜態檔案
+app.use(express.static(path.join(__dirname, 'public')));
 
 // MySQL 資料庫連線池
 const db = mysql.createPool({
     host: 'localhost',
     user: 'root',
-    password: 'zxc778899',
+    password: '',
     database: 'classroom_reservation',
 });
 
 // 根路徑處理
 app.get('/', (req, res) => {
-    // 導向登入頁面
+    if (req.session.user) {
+        return res.redirect('/main');
+    }
     res.sendFile(path.join(__dirname, 'public/login.html'));
 });
 
-//註冊
+// 註冊
 app.post('/api/register', async (req, res) => {
     const { student_id, name, cellphone, department, password } = req.body;
     try {
-        // 檢查學號是否已存在
         const [existingUser] = await db.query('SELECT * FROM users WHERE student_id = ?', [student_id]);
         if (existingUser.length > 0) {
             return res.json({ success: false, message: '學號已被註冊！' });
         }
 
-        // 加密密碼
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 儲存新用戶
         await db.query(
             'INSERT INTO users (student_id, name, cellphone, department, password) VALUES (?, ?, ?, ?, ?)',
             [student_id, name, cellphone, department, hashedPassword]
@@ -49,33 +56,45 @@ app.post('/api/register', async (req, res) => {
         res.status(500).json({ success: false, message: '伺服器錯誤' });
     }
 });
-//登入
+
+// 登入
 app.post('/api/login', async (req, res) => {
     const { student_id, password } = req.body;
     try {
-        // 查詢用戶
         const [users] = await db.query('SELECT * FROM users WHERE student_id = ?', [student_id]);
         if (users.length === 0) {
             return res.json({ success: false, message: '學號不存在！' });
         }
 
         const user = users[0];
-        // 驗證密碼
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.json({ success: false, message: '密碼錯誤！' });
         }
 
-        // 登入成功，返回用戶資料
+        req.session.user = { id: user.id, name: user.name, department: user.department };
         res.json({ success: true, user: { id: user.id, name: user.name, department: user.department } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: '伺服器錯誤' });
     }
 });
-// API: 獲取個人資訊
+
+// 檢查 session 是否存在
+app.get('/profile', (req, res) => {
+    if (req.session.user) {
+        return res.json({ success: true, user: req.session.user });
+    }
+    res.json({ success: false, message: '未登入' });
+});
+
+// 獲取個人資訊
 app.get('/api/profile', async (req, res) => {
-    const userId = req.query.userId;
+    if (!req.session.user) {
+        return res.json({ success: false, message: '未登入！' });
+    }
+
+    const userId = req.session.user.id;
     try {
         const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
         if (users.length === 0) {
@@ -90,9 +109,13 @@ app.get('/api/profile', async (req, res) => {
     }
 });
 
-// API: 更新個人資訊
+// 更新個人資訊
 app.post('/api/profile', async (req, res) => {
-    const userId = req.body.userId;
+    if (!req.session.user) {
+        return res.json({ success: false, message: '未登入！' });
+    }
+
+    const userId = req.session.user.id;
     const { name, cellphone, department } = req.body;
     try {
         await db.query(
@@ -106,12 +129,16 @@ app.post('/api/profile', async (req, res) => {
     }
 });
 
-/// API: 提交預約
+// 提交預約
 app.post('/api/reservations', async (req, res) => {
+    if (!req.session.user) {
+        return res.json({ success: false, message: '未登入！' });
+    }
+
+    const userId = req.session.user.id;
     const { name, cellphone, classroom, borrow_date, borrow_time, occupyReason } = req.body;
 
     try {
-        // 檢查是否有衝突
         const [rows] = await db.query(
             `SELECT * FROM reservations 
              WHERE classroom = ? 
@@ -124,11 +151,10 @@ app.post('/api/reservations', async (req, res) => {
             return res.json({ success: false, message: '該時段已被預約！' });
         }
 
-        // 插入新預約
         await db.query(
-            `INSERT INTO reservations (name, cellphone, classroom, borrow_date, borrow_time, occupyReason)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, cellphone, classroom, borrow_date, borrow_time, occupyReason]
+            `INSERT INTO reservations (user_id, name, cellphone, classroom, borrow_date, borrow_time, occupyReason)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [userId, name, cellphone, classroom, borrow_date, borrow_time, occupyReason]
         );
 
         res.json({ success: true });
@@ -138,9 +164,13 @@ app.post('/api/reservations', async (req, res) => {
     }
 });
 
-// API: 獲取預約紀錄
+// 獲取預約紀錄
 app.get('/api/reservations', async (req, res) => {
-    const userId = req.query.userId;
+    if (!req.session.user) {
+        return res.json({ success: false, message: '未登入！' });
+    }
+
+    const userId = req.session.user.id;
     try {
         const [reservations] = await db.query('SELECT * FROM reservations WHERE user_id = ?', [userId]);
         res.json({ success: true, reservations });
@@ -150,8 +180,12 @@ app.get('/api/reservations', async (req, res) => {
     }
 });
 
-// API: 取消預約
+// 取消預約
 app.post('/api/cancel-reservation', async (req, res) => {
+    if (!req.session.user) {
+        return res.json({ success: false, message: '未登入！' });
+    }
+
     const reservationId = req.body.reservationId;
     try {
         await db.query('DELETE FROM reservations WHERE id = ?', [reservationId]);
@@ -162,6 +196,17 @@ app.post('/api/cancel-reservation', async (req, res) => {
     }
 });
 
+// 登出
+app.get('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: '登出失敗' });
+        }
+        res.json({ success: true });
+    });
+});
+
+// 伺服器啟動
 app.listen(PORT, () => {
     console.log(`伺服器運行於 http://localhost:${PORT}`);
 });
