@@ -6,7 +6,7 @@
     <title>海大資工自習教室預約平台</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -116,30 +116,14 @@
         }
 
         .history-list {
-            margin-top: 20px;
+            font-size: larger;
+            text-align: center;
+            border: #333333;
+            padding: 0px;
         }
 
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-        }
-
-        .history-item button {
-            padding: 5px 10px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .history-item button:hover {
-            background-color: #c82333;
+        .cancel-btn{
+            text-align: center;
         }
 
         #calendar{
@@ -207,7 +191,8 @@
                             <option value="資工碩士班">資工碩士班</option>
                         </select>
                     </div>
-                    <button type="button" class="btn" onclick="saveProfile()">儲存資訊</button>
+                    <button type="button" class="btn" id="edit-btn" onclick="editProfile()">編輯</button>
+                    <button type="button" class="btn" id="save-btn" onclick="saveProfile()" style="display: none;">儲存</button>
                 </form>
             </div>
         </div>
@@ -285,17 +270,38 @@
             document.getElementById(tabId).classList.add('active');
             document.getElementById('tab-' + tabId).classList.add('active');
 
-            if (tabId === "history") {
-                const calendar = FullCalendar.getCalendar(document.getElementById("calendar"));
-                if (calendar) {
-                    calendar.updateSize(); // 強制重新調整行事曆大小
-                }
+            if (tabId === "history" && calendarInstance) {
+                calendarInstance.render(); // 強制重新調整行事曆大小
             }
         }
 
         function logout() {
-            alert("已登出！");
-            window.location.href = "login.html";
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("已登出！");
+                    window.location.href = "login.html"; // 跳轉到登入頁面
+                } else {
+                    alert('登出失敗！');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('伺服器錯誤，請稍後再試！');
+            });
+        }
+
+        //個人資訊區~~~
+        function editProfile() {
+            document.getElementById("name").removeAttribute("readonly");
+            document.getElementById("cellphone").removeAttribute("readonly");
+            document.getElementById("department").removeAttribute("disabled");
+            document.getElementById("edit-btn").style.display = "none";
+            document.getElementById("save-btn").style.display = "inline-block";
         }
 
         function saveProfile() {
@@ -315,6 +321,12 @@
                 .then(data => {
                     if (data.success) {
                         alert('資訊已更新！');
+                        // 更新後顯示「編輯」按鈕
+                        document.getElementById("edit-btn").style.display = "inline-block";
+                        document.getElementById("save-btn").style.display = "none";
+                        document.getElementById("name").setAttribute("readonly", true);
+                        document.getElementById("cellphone").setAttribute("readonly", true);
+                        document.getElementById("department").setAttribute("disabled", true);
                     } else {
                         alert(data.message);
                     }
@@ -335,6 +347,9 @@
                         document.getElementById("name").value = user.name;
                         document.getElementById("cellphone").value = user.cellphone;
                         document.getElementById("department").value = user.department;
+                        document.getElementById("name").setAttribute("readonly", true);
+                        document.getElementById("cellphone").setAttribute("readonly", true);
+                        document.getElementById("department").setAttribute("disabled", true);
                     } else {
                         alert(data.message);
                     }
@@ -345,28 +360,19 @@
                 });
         }
 
-        // 當頁面載入時，載入用戶資訊
-        document.addEventListener("DOMContentLoaded", function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('userId');
-            if (userId) {
-                loadProfile(userId);
-            }
-        });
-
+        //FullCalendar區~~~
         function updateCalendar() {
             fetch('/api/reservations')
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
+                        console.log(data.reservations); // 檢查資料格式
                         const events = data.reservations.map(reservation => ({
                             title: reservation.classroom,
-                            start: reservation.borrow_date + ' ' + reservation.borrow_time_start,
-                            end: reservation.borrow_date + ' ' + reservation.borrow_time_end
+                            start: reservation.borrow_date + 'T' + reservation.borrow_time_start,
+                            end: reservation.borrow_date + 'T' + reservation.borrow_time_end,
                         }));
-
-                        const calendar = FullCalendar.getCalendar(document.getElementById("calendar"));
-                        calendar.addEventSource(events);
+                        calendarInstance.addEventSource(events);
                     } else {
                         alert('無法更新行事曆');
                     }
@@ -377,9 +383,11 @@
                 });
         }
 
+        let calendarInstance;
+
         document.addEventListener("DOMContentLoaded", function () {
             const calendarEl = document.getElementById("calendar");
-            const calendar = new FullCalendar.Calendar(calendarEl, {
+            calendarInstance = new FullCalendar.Calendar(calendarEl, {
                 initialView: "dayGridMonth",
                 headerToolbar: {
                     left: "prev,next today",
@@ -392,20 +400,15 @@
                     week: "週",
                     day: "日",
                 },
-                locale: "zh-tw", // 設置語言
-                events: [ ] //event
+                locale: "zh-tw",
+                events: [],
             });
-            calendar.render();
-            FullCalendar.getCalendar = () => calendar;
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('userId');
-            if (userId) {
-                loadProfile(userId);
-                updateCalendar(); // 初始化行事曆
-            }
+            calendarInstance.render();
         });
 
+        //預約區~~~
         function submitReservation() {
+            const userId = document.getElementById("userId").value;
             const name = document.getElementById("name").value;
             const cellphone = document.getElementById("cellphone").value;
             const classroom = document.getElementById("classroom").value;
@@ -424,7 +427,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name, cellphone, classroom, borrow_date, borrow_time, occupyReason
+                    userId, name, cellphone, classroom, borrow_date, borrow_time, occupyReason
                 }),
             })
             .then(response => response.json())
@@ -433,6 +436,7 @@
                     alert('預約成功！');
                     // 更新行事曆
                     updateCalendar();
+                    window.location.reload()
                 } else {
                     alert(`預約失敗：${data.message}`);
                 }
@@ -450,18 +454,43 @@
                     if (data.success) {
                         const reservations = data.reservations;
                         const historyList = document.getElementById("history-list");
-                        historyList.innerHTML = ''; // 清空舊數據
+
+                        // 清空舊數據並新增表格標題
+                        historyList.innerHTML = `
+                            <table class="reservation-table" border=1 style="border:3px">
+                                <thead>
+                                    <tr>
+                                        <th>借用教室</th>
+                                        <th>借用日期</th>
+                                        <th>借用時間</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        `;
+
+                        const tableBody = historyList.querySelector("tbody");
 
                         reservations.forEach(reservation => {
-                            const historyItem = document.createElement("div");
-                            historyItem.classList.add("history-item");
-                            historyItem.innerHTML = `
-                                <span>${reservation.classroom} - ${reservation.borrow_date} ${reservation.borrow_time}</span>
-                                <button onclick="cancelReservation(${reservation.id})">取消預約</button>
+                            const row = document.createElement("tr");
+
+                            // 格式化日期：提取 year-month-day
+                            const borrowDate = new Date(reservation.borrow_date).toISOString().split('T')[0];
+
+                            row.innerHTML = `
+                                <td>${reservation.classroom}</td>
+                                <td>${borrowDate}</td>
+                                <td>${reservation.borrow_time}</td>
+                                <td><button class="cancel-btn" onclick="cancelReservation(${reservation.id})">取消預約</button></td>
                             `;
-                            historyList.appendChild(historyItem);
+
+                            tableBody.appendChild(row);
                         });
                     } else {
+                        const historyList = document.getElementById("history-list");
+                        historyList.innerHTML =""
                         alert(data.message);
                     }
                 })
@@ -470,7 +499,6 @@
                     alert('伺服器錯誤，請稍後再試！');
                 });
         }
-
 
         function cancelReservation(reservationId) {
             fetch('/api/cancel-reservation', {
@@ -493,16 +521,35 @@
                 });
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('userId');
-            if (userId) {
-                loadReservations(userId);
-            }
+        // 當頁面載入時，載入用戶資訊
+        document.addEventListener("DOMContentLoaded", function () {
+            // 檢查用戶是否登入
+            fetch('/api/profile', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // 已登入，載入用戶資訊和預約紀錄
+                    const userId = data.userId;
+                    loadProfile(userId);
+                    loadReservations(userId);
+                    updateCalendar(); // 初始化行事曆
+                } else {
+                    // 未登入，跳轉到登入頁面
+                    window.location.href = "login.html";
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('伺服器錯誤，請稍後再試！');
+            });
         });
+
 </script>
     </script>
 
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
 </body>
 </html>
