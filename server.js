@@ -136,25 +136,79 @@ app.post('/api/reservations', async (req, res) => {
     }
 
     const userId = req.session.user.id;
-    const { name, cellphone, classroom, borrow_date, borrow_time, occupyReason } = req.body;
+    const { name, cellphone, classroom, borrow_date, borrow_time_start, borrow_time_end, occupyReason } = req.body;
 
     try {
-        const [rows] = await db.query(
+        const borrowDayOfWeek = new Date(borrow_date).getDay(); // 獲取星期幾（0=周日，1=周一，...）
+
+        // 將時間轉換為24小時制的 Date 物件進行比較
+        const [borrowStartHour, borrowStartMinute] = borrow_time_start.split(":").map(Number);
+        const [borrowEndHour, borrowEndMinute] = borrow_time_end.split(":").map(Number);
+        
+        const borrowStartTime = new Date(borrow_date);
+        borrowStartTime.setHours(borrowStartHour, borrowStartMinute, 0);
+        
+        const borrowEndTime = new Date(borrow_date);
+        borrowEndTime.setHours(borrowEndHour, borrowEndMinute, 0);
+
+        // 檢查是否與已有預約衝突
+        const [existingReservations] = await db.query(
             `SELECT * FROM reservations 
              WHERE classroom = ? 
              AND borrow_date = ? 
-             AND borrow_time = ?`,
-            [classroom, borrow_date, borrow_time]
+             AND (
+                 (borrow_time_start < ? AND borrow_time_end > ?) OR
+                 (borrow_time_start < ? AND borrow_time_end > ?) OR
+                 (borrow_time_start >= ? AND borrow_time_end <= ?)
+             )`,
+            [
+                classroom,
+                borrow_date,
+                borrowEndTime.toISOString(),
+                borrowEndTime.toISOString(),
+                borrowStartTime.toISOString(),
+                borrowStartTime.toISOString(),
+                borrowStartTime.toISOString(),
+                borrowEndTime.toISOString(),
+            ]
         );
 
-        if (rows.length > 0) {
+        if (existingReservations.length > 0) {
             return res.json({ success: false, message: '該時段已被預約！' });
         }
 
+        // 檢查是否與課表衝突
+        const [scheduleConflicts] = await db.query(
+            `SELECT * FROM class_schedules
+             WHERE classroom = ?
+             AND day_of_week = ?`,
+            [classroom, borrowDayOfWeek]
+        );
+
+        // 檢查時間是否與課程時間段重疊
+        const timeConflicts = scheduleConflicts.filter(course => {
+            const [courseStartHour, courseStartMinute] = course.start_time.split(":").map(Number);
+            const [courseEndHour, courseEndMinute] = course.end_time.split(":").map(Number);
+
+            const courseStartTime = new Date(borrow_date);
+            courseStartTime.setHours(courseStartHour, courseStartMinute, 0);
+
+            const courseEndTime = new Date(borrow_date);
+            courseEndTime.setHours(courseEndHour, courseEndMinute, 0);
+
+            // 檢查時間是否重疊
+            return (borrowStartTime < courseEndTime && borrowEndTime > courseStartTime);
+        });
+
+        if (timeConflicts.length > 0) {
+            return res.json({ success: false, message: '該時段教室有課程！' });
+        }
+
+        // 插入新的預約記錄
         await db.query(
-            `INSERT INTO reservations (user_id, name, cellphone, classroom, borrow_date, borrow_time, occupyReason)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [userId, name, cellphone, classroom, borrow_date, borrow_time, occupyReason]
+            `INSERT INTO reservations (user_id, name, cellphone, classroom, borrow_date, borrow_time_start, borrow_time_end, occupyReason)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, name, cellphone, classroom, borrow_date, borrow_time_start, borrow_time_end, occupyReason]
         );
 
         res.json({ success: true });
@@ -163,6 +217,57 @@ app.post('/api/reservations', async (req, res) => {
         res.status(500).json({ success: false, message: '伺服器錯誤' });
     }
 });
+
+
+//檢查課表衝突
+app.post('/api/class-schedule', async (req, res) => {
+    const { classroom, borrow_date, borrow_time_start, borrow_time_end } = req.body;
+
+    try {
+        const dayOfWeek = new Date(borrow_date).getDay();
+        const weekDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+        // 將借用的時間轉換為 Date 物件
+        const [startHour, startMinute] = borrow_time_start.split(":").map(Number);
+        const [endHour, endMinute] = borrow_time_end.split(":").map(Number);
+
+        const borrowStartTime = new Date(borrow_date);
+        borrowStartTime.setHours(startHour, startMinute, 0);
+
+        const borrowEndTime = new Date(borrow_date);
+        borrowEndTime.setHours(endHour, endMinute, 0);
+
+        // 查詢該日期和教室的所有課程
+        const [conflicts] = await db.query(
+            `SELECT * FROM class_schedules 
+             WHERE classroom = ? 
+             AND day_of_week = ?`,
+            [classroom, weekDay]
+        );
+
+        // 檢查時間是否與課程時間段重疊
+        const timeConflicts = conflicts.filter(course => {
+            const [courseStartHour, courseStartMinute] = course.start_time.split(":").map(Number);
+            const [courseEndHour, courseEndMinute] = course.end_time.split(":").map(Number);
+
+            const courseStartTime = new Date(borrow_date);
+            courseStartTime.setHours(courseStartHour, courseStartMinute, 0);
+
+            const courseEndTime = new Date(borrow_date);
+            courseEndTime.setHours(courseEndHour, courseEndMinute, 0);
+
+            // 檢查時間是否重疊
+            return (borrowStartTime < courseEndTime && borrowEndTime > courseStartTime);
+        });
+
+        res.json({ success: true, conflicts: timeConflicts });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: '伺服器錯誤' });
+    }
+});
+
+
 
 // 獲取預約紀錄
 app.get('/api/reservations', async (req, res) => {
@@ -197,7 +302,7 @@ app.post('/api/cancel-reservation', async (req, res) => {
 });
 
 // 登出
-app.get('/api/logout', (req, res) => {
+app.post('/api/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ success: false, message: '登出失敗' });
