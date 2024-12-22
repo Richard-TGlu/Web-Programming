@@ -91,7 +91,6 @@
                     <option value="資工4A">資工4A</option>
                     <option value="資工4B">資工4B</option>
                     <option value="資工系碩士班">資工系碩士班</option>
-                    <!-- 可擴展更多系級 -->
                 </select>
             </div>
             <div class="form-group">
@@ -114,25 +113,31 @@
                 department: document.getElementById("department").value,
                 password: document.getElementById("password").value,
             };
-
-            fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('註冊成功！請前往登入');
-                        window.location.href = 'login.html';
-                    } else {
-                        alert(`註冊失敗：${data.message}`);
-                    }
+            var student_id=document.getElementById("student_id").value
+            var checkA=student_id.includes("570",3);
+            var checkB=student_id.includes("571",3);
+            if(checkA === true || checkB === true){
+                fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
                 })
-                .catch(err => {
-                    console.error('Error:', err);
-                    alert('伺服器錯誤，請稍後再試！');
-                });
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('註冊成功！請前往登入');
+                            window.location.href = 'login.html';
+                        } else {
+                            alert(`註冊失敗：${data.message}`);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        alert('伺服器錯誤，請稍後再試！');
+                    });
+            }else{
+                window.alert("此服務僅限於資工系學生");
+            }
         }
     </script>
 </body>
