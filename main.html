@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>海大資工自習教室預約平台</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -223,20 +223,20 @@
                 <div class="form-group">
                     <label for="borrow_time">借用時間:</label>
                     <select id="borrow_time" name="borrow_time">
-                        <option value="08:00 - 08:50">08:00 - 08:50</option>
-                        <option value="09:00 - 09:50">09:00 - 09:50</option>
-                        <option value="10:00 - 10:50">10:00 - 10:50</option>
-                        <option value="11:00 - 11:50">11:00 - 11:50</option> 
-                        <option value="12:00 - 12:50">12:00 - 12:50</option> 
-                        <option value="13:00 - 13:50">13:00 - 13:50</option> 
-                        <option value="14:00 - 14:50">14:00 - 14:50</option> 
-                        <option value="15:00 - 15:50">15:00 - 15:50</option> 
-                        <option value="16:00 - 16:50">16:00 - 16:50</option> 
-                        <option value="17:00 - 17:50">17:00 - 17:50</option> 
-                        <option value="18:00 - 18:50">18:00 - 18:50</option> 
-                        <option value="19:00 - 19:50">19:00 - 19:50</option> 
-                        <option value="20:00 - 20:50">20:00 - 20:50</option> 
-                        <option value="21:00 - 21:50">21:00 - 21:50</option> 
+                        <option value="08:00~08:50">08:00~08:50</option>
+                        <option value="09:00~09:50">09:00~09:50</option>
+                        <option value="10:00~10:50">10:00~10:50</option>
+                        <option value="11:00~11:50">11:00~11:50</option> 
+                        <option value="12:00~12:50">12:00~12:50</option> 
+                        <option value="13:00~13:50">13:00~13:50</option> 
+                        <option value="14:00~14:50">14:00~14:50</option> 
+                        <option value="15:00~15:50">15:00~15:50</option> 
+                        <option value="16:00~16:50">16:00~16:50</option> 
+                        <option value="17:00~17:50">17:00~17:50</option> 
+                        <option value="18:00~18:50">18:00~18:50</option> 
+                        <option value="19:00~19:50">19:00~19:50</option> 
+                        <option value="20:00~20:50">20:00~20:50</option> 
+                        <option value="21:00~21:50">21:00~21:50</option> 
                     </select>
                 </div>
                 <div class="form-group">
@@ -361,32 +361,13 @@
         }
 
         //FullCalendar區~~~
-        function updateCalendar() {
-            fetch('/api/reservations')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log(data.reservations); // 檢查資料格式
-                        const events = data.reservations.map(reservation => ({
-                            title: reservation.classroom,
-                            start: reservation.borrow_date + 'T' + reservation.borrow_time_start,
-                            end: reservation.borrow_date + 'T' + reservation.borrow_time_end,
-                        }));
-                        calendarInstance.addEventSource(events);
-                    } else {
-                        alert('無法更新行事曆');
-                    }
-                })
-                .catch(err => {
-                    console.error('Error:', err);
-                    alert('伺服器錯誤，請稍後再試！');
-                });
-        }
-
         let calendarInstance;
 
+        // 初始化行事曆
         document.addEventListener("DOMContentLoaded", function () {
             const calendarEl = document.getElementById("calendar");
+
+            // 初始化 FullCalendar 實例
             calendarInstance = new FullCalendar.Calendar(calendarEl, {
                 initialView: "dayGridMonth",
                 headerToolbar: {
@@ -401,14 +382,57 @@
                     day: "日",
                 },
                 locale: "zh-tw",
-                events: [],
+                events: function (info, successCallback, failureCallback) {
+                    // 從伺服器獲取預約資料
+                    fetch('/api/reservations')
+                        .then(res => res.json())
+                        .then(data => {
+                            console.log('預約資料：', data);
+                            if (data.success) {
+                                // 格式化預約資料並傳給行事曆
+                                const events = data.reservations.map(reservation => {
+                                const borrowdate=reservation.borrow_date;
+                                const dateObj=new Date(borrowdate);
+                                const formattedDate = dateObj.toISOString().split('T')[0];
+                                const startDateTime = formattedDate + ' ' + reservation.borrow_time_start+":00";
+                                const endDateTime = formattedDate + ' ' + reservation.borrow_time_end+":00";
+                                console.log('Event Start:', startDateTime, 'Event End:', endDateTime);  // 用於檢查時間格式
+                                return {
+                                    title: reservation.classroom+" for "+reservation.occupyReason,
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    textcolor: "#000",
+                                    description: reservation.occupyReason,
+                                };
+                            });
+                                successCallback(events); // 顯示事件
+                            } else {
+                                failureCallback('無法加載預約資料');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching reservations:', err);
+                            failureCallback('伺服器錯誤');
+                        });
+                },
             });
+
+            // 渲染行事曆
             calendarInstance.render();
         });
 
+        // 更新行事曆的事件
+        function updateCalendar() {
+            // 使用已經存在的 calendarInstance 更新事件
+            if(calendarInstance){
+                calendarInstance.refetchEvents(); // 重新加載事件
+            }
+        }
+
+
+
         //預約區~~~
         function submitReservation() {
-            const userId = document.getElementById("userId").value;
             const name = document.getElementById("name").value;
             const cellphone = document.getElementById("cellphone").value;
             const classroom = document.getElementById("classroom").value;
@@ -422,27 +446,69 @@
                 return;
             }
 
-            // AJAX 請求
-            fetch('/api/reservations', {
+            // 切分時間段
+            const [borrow_time_start, borrow_time_end] = borrow_time.split("~");
+
+            // 驗證時間段是否正確
+            if (!borrow_time_start || !borrow_time_end) {
+                alert("請選擇有效的時間段！");
+                return;
+            }
+
+            // 課表檢查請求
+            fetch('/api/class-schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId, name, cellphone, classroom, borrow_date, borrow_time, occupyReason
+                    classroom,
+                    borrow_date,
+                    borrow_time_start,
+                    borrow_time_end,
                 }),
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    alert('預約成功！');
-                    // 更新行事曆
-                    updateCalendar();
-                    window.location.reload()
+                // 確認後端返回的資料格式
+                if (data.success && Array.isArray(data.conflicts)) {
+                    if (data.conflicts.length > 0) {
+                        alert(`該時段有課程！請選擇其他時間。`);
+                    } else {
+                        // 無課表衝突，繼續提交預約
+                        fetch('/api/reservations', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name,
+                                cellphone,
+                                classroom,
+                                borrow_date,
+                                borrow_time_start,
+                                borrow_time_end,
+                                occupyReason,
+                            }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('預約成功！');
+                                // 更新行事曆
+                                updateCalendar();
+                                window.location.reload();
+                            } else {
+                                alert(`預約失敗：${data.message}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('伺服器錯誤，請稍後再試！');
+                        });
+                    }
                 } else {
-                    alert(`預約失敗：${data.message}`);
+                    alert("伺服器回應錯誤，請稍後再試！");
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
+            .catch(err => {
+                console.error('Error:', err);
                 alert('伺服器錯誤，請稍後再試！');
             });
         }
@@ -482,7 +548,7 @@
                             row.innerHTML = `
                                 <td>${reservation.classroom}</td>
                                 <td>${borrowDate}</td>
-                                <td>${reservation.borrow_time}</td>
+                                <td>${reservation.borrow_time_start}~${reservation.borrow_time_end}</td>
                                 <td><button class="cancel-btn" onclick="cancelReservation(${reservation.id})">取消預約</button></td>
                             `;
 
@@ -511,6 +577,7 @@
                     if (data.success) {
                         alert('預約已取消！');
                         loadReservations(document.getElementById("userId").value);
+                        updateCalendar();
                     } else {
                         alert(data.message);
                     }
@@ -548,8 +615,5 @@
         });
 
 </script>
-    </script>
-
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
 </body>
 </html>
