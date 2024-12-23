@@ -94,7 +94,7 @@
         }
 
         .form-group input, .form-group select {
-            width: 100%;
+            width: 95%;
             padding: 8px;
             margin-top: 5px;
             border: 1px solid #ccc;
@@ -138,7 +138,7 @@
             min-height: 400px;
         }
         textarea{
-            width: 100%;
+            width: 95%;
             padding: 8px;
             margin-top: 5px;
             border: 1px solid #ccc;
@@ -276,23 +276,25 @@
         }
 
         function logout() {
-            fetch('/api/logout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("已登出！");
-                    window.location.href = "login.html"; // 跳轉到登入頁面
-                } else {
-                    alert('登出失敗！');
-                }
-            })
-            .catch(err => {
-                console.error('Error:', err);
-                alert('伺服器錯誤，請稍後再試！');
-            });
+            if(window.confirm("確定要登出？")){
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("已登出！");
+                        window.location.href = "login.html"; // 跳轉到登入頁面
+                    } else {
+                        alert('登出失敗！');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+            }
         }
 
         //個人資訊區~~~
@@ -305,36 +307,37 @@
         }
 
         function saveProfile() {
-            const name = document.getElementById("name").value;
-            const cellphone = document.getElementById("cellphone").value;
-            const department = document.getElementById("department").value;
-            const userId = document.getElementById("userId").value;
-
-            const formData = { userId, name, cellphone, department };
-
-            fetch('/api/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('資訊已更新！');
-                        // 更新後顯示「編輯」按鈕
-                        document.getElementById("edit-btn").style.display = "inline-block";
-                        document.getElementById("save-btn").style.display = "none";
-                        document.getElementById("name").setAttribute("readonly", true);
-                        document.getElementById("cellphone").setAttribute("readonly", true);
-                        document.getElementById("department").setAttribute("disabled", true);
-                    } else {
-                        alert(data.message);
-                    }
+            if(window.confirm("確定要儲存資訊？")){
+                const name = document.getElementById("name").value;
+                const cellphone = document.getElementById("cellphone").value;
+                const department = document.getElementById("department").value;
+                const userId = document.getElementById("userId").value;
+                const formData = { userId, name, cellphone, department };
+    
+                fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
                 })
-                .catch(err => {
-                    console.error('Error:', err);
-                    alert('伺服器錯誤，請稍後再試！');
-                });
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('資訊已更新！');
+                            // 更新後顯示「編輯」按鈕
+                            document.getElementById("edit-btn").style.display = "inline-block";
+                            document.getElementById("save-btn").style.display = "none";
+                            document.getElementById("name").setAttribute("readonly", true);
+                            document.getElementById("cellphone").setAttribute("readonly", true);
+                            document.getElementById("department").setAttribute("disabled", true);
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        alert('伺服器錯誤，請稍後再試！');
+                    });
+            }
         }
 
         function loadProfile(userId) {
@@ -392,8 +395,7 @@
                                 // 格式化預約資料並傳給行事曆
                                 const events = data.reservations.map(reservation => {
                                 const borrowdate=reservation.borrow_date;
-                                const dateObj=new Date(borrowdate);
-                                const formattedDate = dateObj.toISOString().split('T')[0];
+                                const formattedDate=formatDate(borrowdate);
                                 const startDateTime = formattedDate + ' ' + reservation.borrow_time_start+":00";
                                 const endDateTime = formattedDate + ' ' + reservation.borrow_time_end+":00";
                                 console.log('Event Start:', startDateTime, 'Event End:', endDateTime);  // 用於檢查時間格式
@@ -439,78 +441,80 @@
             const borrow_date = document.getElementById("borrow_date").value;
             const borrow_time = document.getElementById("borrow_time").value;
             const occupyReason = document.getElementById("occupyReason").value.trim();
+            if(window.confirm("確定要送出預約？")){
 
-            // 驗證必填欄位
-            if (!name || !cellphone || !classroom || !borrow_date || !borrow_time || !occupyReason) {
-                alert("請填寫所有必填欄位！");
-                return;
-            }
-
-            // 切分時間段
-            const [borrow_time_start, borrow_time_end] = borrow_time.split("~");
-
-            // 驗證時間段是否正確
-            if (!borrow_time_start || !borrow_time_end) {
-                alert("請選擇有效的時間段！");
-                return;
-            }
-
-            // 課表檢查請求
-            fetch('/api/class-schedule', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    classroom,
-                    borrow_date,
-                    borrow_time_start,
-                    borrow_time_end,
-                }),
-            })
-            .then(res => res.json())
-            .then(data => {
-                // 確認後端返回的資料格式
-                if (data.success && Array.isArray(data.conflicts)) {
-                    if (data.conflicts.length > 0) {
-                        alert(`該時段有課程！請選擇其他時間。`);
-                    } else {
-                        // 無課表衝突，繼續提交預約
-                        fetch('/api/reservations', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                name,
-                                cellphone,
-                                classroom,
-                                borrow_date,
-                                borrow_time_start,
-                                borrow_time_end,
-                                occupyReason,
-                            }),
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert('預約成功！');
-                                // 更新行事曆
-                                updateCalendar();
-                                window.location.reload();
-                            } else {
-                                alert(`預約失敗：${data.message}`);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('伺服器錯誤，請稍後再試！');
-                        });
-                    }
-                } else {
-                    alert("伺服器回應錯誤，請稍後再試！");
+                // 驗證必填欄位
+                if (!name || !cellphone || !classroom || !borrow_date || !borrow_time || !occupyReason) {
+                    alert("請填寫所有必填欄位！");
+                    return;
                 }
-            })
-            .catch(err => {
-                console.error('Error:', err);
-                alert('伺服器錯誤，請稍後再試！');
-            });
+    
+                // 切分時間段
+                const [borrow_time_start, borrow_time_end] = borrow_time.split("~");
+    
+                // 驗證時間段是否正確
+                if (!borrow_time_start || !borrow_time_end) {
+                    alert("請選擇有效的時間段！");
+                    return;
+                }
+    
+                // 課表檢查請求
+                fetch('/api/class-schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        classroom,
+                        borrow_date,
+                        borrow_time_start,
+                        borrow_time_end,
+                    }),
+                })
+                .then(res => res.json())
+                .then(data => {
+                    // 確認後端返回的資料格式
+                    if (data.success && Array.isArray(data.conflicts)) {
+                        if (data.conflicts.length > 0) {
+                            alert(`該時段有課程！請選擇其他時間。`);
+                        } else {
+                            // 無課表衝突，繼續提交預約
+                            fetch('/api/reservations', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    name,
+                                    cellphone,
+                                    classroom,
+                                    borrow_date,
+                                    borrow_time_start,
+                                    borrow_time_end,
+                                    occupyReason,
+                                }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert('預約成功！');
+                                    // 更新行事曆
+                                    updateCalendar();
+                                    window.location.reload();
+                                } else {
+                                    alert(`預約失敗：${data.message}`);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('伺服器錯誤，請稍後再試！');
+                            });
+                        }
+                    } else {
+                        alert("伺服器回應錯誤，請稍後再試！");
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('伺服器錯誤，請稍後再試！');
+                });
+            }
         }
 
         function loadReservations(userId) {
@@ -543,11 +547,10 @@
                             const row = document.createElement("tr");
 
                             // 格式化日期：提取 year-month-day
-                            const borrowDate = new Date(reservation.borrow_date).toISOString().split('T')[0];
-
+                            const formatted=formatDate(reservation.borrow_date);
                             row.innerHTML = `
                                 <td>${reservation.classroom}</td>
-                                <td>${borrowDate}</td>
+                                <td>${formatted}</td>
                                 <td>${reservation.borrow_time_start}~${reservation.borrow_time_end}</td>
                                 <td><button class="cancel-btn" onclick="cancelReservation(${reservation.id})">取消預約</button></td>
                             `;
@@ -567,25 +570,27 @@
         }
 
         function cancelReservation(reservationId) {
-            fetch('/api/cancel-reservation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reservationId })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('預約已取消！');
-                        loadReservations(document.getElementById("userId").value);
-                        updateCalendar();
-                    } else {
-                        alert(data.message);
-                    }
+            if(window.confirm("確定要取消預約？")){
+                fetch('/api/cancel-reservation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservationId })
                 })
-                .catch(err => {
-                    console.error('Error:', err);
-                    alert('伺服器錯誤，請稍後再試！');
-                });
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('預約已取消！');
+                            loadReservations(document.getElementById("userId").value);
+                            updateCalendar();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        alert('伺服器錯誤，請稍後再試！');
+                    });
+            }
         }
 
         // 當頁面載入時，載入用戶資訊
@@ -613,6 +618,15 @@
                 alert('伺服器錯誤，請稍後再試！');
             });
         });
+
+        //格式化日期
+        function formatDate(dateString){
+            const date=new Date(dateString);
+            const year=date.getFullYear();
+            const month=String(date.getMonth()+1).padStart(2,'0');
+            const day=String(date.getDate()).padStart(2,'0');
+            return `${year}-${month}-${day}`;
+        }
 
 </script>
 </body>
