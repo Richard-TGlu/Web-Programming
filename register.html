@@ -116,27 +116,34 @@
             var student_id=document.getElementById("student_id").value
             var checkA=student_id.includes("570",3);
             var checkB=student_id.includes("571",3);
-            if(checkA === true || checkB === true){
-                fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('註冊成功！請前往登入');
-                            window.location.href = 'login.html';
-                        } else {
-                            alert(`註冊失敗：${data.message}`);
-                        }
+            if(window.confirm("是否送出資料？")){
+                if(!student_id||!name||!cellphone||!password||!department){
+                    alert("請填寫所有必填欄位！");
+                    return;
+                }
+
+                if(checkA === true || checkB === true){
+                    fetch('/api/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData),
                     })
-                    .catch(err => {
-                        console.error('Error:', err);
-                        alert('伺服器錯誤，請稍後再試！');
-                    });
-            }else{
-                window.alert("此服務僅限於資工系學生");
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('註冊成功！請前往登入');
+                                window.location.href = 'login.html';
+                            } else {
+                                alert(`註冊失敗：${data.message}`);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error:', err);
+                            alert('伺服器錯誤，請稍後再試！');
+                        });
+                }else{
+                    window.alert("此服務僅限於資工系學生");
+                }
             }
         }
     </script>
